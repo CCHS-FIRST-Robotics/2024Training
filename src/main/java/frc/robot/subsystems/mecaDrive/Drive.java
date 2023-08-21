@@ -26,14 +26,6 @@ public class Drive extends SubsystemBase {
   private final DriveIO io;
   private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
 
-  // Odometry class for tracking robot pose
-  MecanumDriveOdometry odometry =
-  new MecanumDriveOdometry(
-        HardwareConstants.MECANUM_KINEMATICS,
-        new Rotation2d(),
-        new MecanumDriveWheelPositions()
-);
-
   /** Creates a new Drive. */
   public Drive(DriveIO io) {
     this.io = io;
@@ -43,10 +35,6 @@ public class Drive extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
     Logger.getInstance().processInputs("Drive", inputs);
-
-    // Update odometry and log the new pose
-    odometry.update(getHeading(), getWheelPositions());
-    Logger.getInstance().recordOutput("Odometry", getPose());
   }
 
   /**
@@ -73,19 +61,6 @@ public class Drive extends SubsystemBase {
     io.setVoltage(0, 0, 0 ,0);
   }
 
-  /** Returns the current odometry pose in meters. */
-  public Pose2d getPose() {
-    return odometry.getPoseMeters();
-  }
-
-  /**
-   * Resets the odometry to the specified pose.
-   *
-   * @param pose The pose to which to set the odometry.
-   */
-  public void resetOdometry(Pose2d pose) {
-    odometry.resetPosition(getHeading(), getWheelPositions(), pose);
-  }
 
   public Rotation2d getHeading() {
     return new Rotation2d(-inputs.gyroYawRad);

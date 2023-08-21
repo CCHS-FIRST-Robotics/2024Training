@@ -9,16 +9,9 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
-import frc.robot.commands.DriveWithFlywheelAuto;
 import frc.robot.commands.SpinAuto;
-import frc.robot.subsystems.flywheel.Flywheel;
-import frc.robot.subsystems.flywheel.FlywheelIO;
-import frc.robot.subsystems.flywheel.FlywheelIOSim;
-import frc.robot.subsystems.flywheel.FlywheelIOSparkMax;
 import frc.robot.subsystems.mecaDrive.Drive;
 import frc.robot.subsystems.mecaDrive.DriveIO;
-import frc.robot.subsystems.mecaDrive.DriveIOSim;
-import frc.robot.subsystems.mecaDrive.DriveIOSparkMax;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -35,14 +28,12 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 public class RobotContainer {
   // Subsystems
   private final Drive drive;
-  private final Flywheel flywheel;
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser = new LoggedDashboardChooser<>("Auto Choices");
-  private final LoggedDashboardNumber flywheelSpeedInput = new LoggedDashboardNumber("Flywheel Speed", 1500.0);
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -51,31 +42,20 @@ public class RobotContainer {
     switch (Constants.currentMode) {
       // Real robot, instantiate hardware IO implementations
       case REAL:
-        drive = new Drive(new DriveIOSparkMax());
-        flywheel = new Flywheel(new FlywheelIOSparkMax());
-        // drive = new Drive(new DriveIOFalcon500());
-        // flywheel = new Flywheel(new FlywheelIOFalcon500());
         break;
 
       // Sim robot, instantiate physics sim IO implementations
       case SIM:
-        drive = new Drive(new DriveIOSim());
-        flywheel = new Flywheel(new FlywheelIOSim());
         break;
 
       // Replayed robot, disable IO implementations
       default:
-        drive = new Drive(new DriveIO() {
-        });
-        flywheel = new Flywheel(new FlywheelIO() {
-        });
         break;
     }
 
     // Set up auto routines
     autoChooser.addDefaultOption("Do Nothing", new InstantCommand());
     autoChooser.addOption("Spin", new SpinAuto(drive));
-    autoChooser.addOption("Drive With Flywheel", new DriveWithFlywheelAuto(drive, flywheel));
 
     // Configure the button bindings
     configureButtonBindings();
@@ -91,9 +71,8 @@ public class RobotContainer {
     drive.setDefaultCommand(
       new RunCommand(() -> drive.drive(controller.getLeftX(), -controller.getLeftY(), controller.getRightX(), true))
     );
-    controller.a().whileTrue(
-      new StartEndCommand(() -> flywheel.runVelocity(flywheelSpeedInput.get()), flywheel::stop, flywheel)
-    );
+    
+    //TODO: create a command (make the robot do something) that runs when you press A
   }
 
   /**
