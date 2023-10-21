@@ -22,5 +22,10 @@ public class ModuleIOSparkMax implements ModuleIO {
     public void updateInputs(ModuleIOInputs inputs) {
         inputs.driveTempCelcius = driveMotorController.getMotorTemperature();
         inputs.turnTempCelcius = turnMotorController.getMotorTemperature();
+        inputs.driveRelativePositionMeters = 
+        inputs.turnRelativePositionRad = 
+        inputs.turnAbsolutePositionRad = 
+        inputs.driveCurrentAmps = 
+        inputs.turnCurrentAmps = 
     }
 }
