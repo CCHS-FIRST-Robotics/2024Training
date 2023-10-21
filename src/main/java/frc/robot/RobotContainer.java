@@ -9,9 +9,16 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
+import frc.robot.commands.DriveWithFlywheelAuto;
 import frc.robot.commands.SpinAuto;
-import frc.robot.subsystems.mecaDrive.Drive;
-import frc.robot.subsystems.mecaDrive.DriveIO;
+import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.DriveIO;
+import frc.robot.subsystems.drive.DriveIOSim;
+import frc.robot.subsystems.drive.DriveIOSparkMax;
+import frc.robot.subsystems.flywheel.Flywheel;
+import frc.robot.subsystems.flywheel.FlywheelIO;
+import frc.robot.subsystems.flywheel.FlywheelIOSim;
+import frc.robot.subsystems.flywheel.FlywheelIOSparkMax;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -26,9 +33,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-  // Subsystems
-  private final Drive drive;
-
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
 
@@ -55,7 +59,6 @@ public class RobotContainer {
 
     // Set up auto routines
     autoChooser.addDefaultOption("Do Nothing", new InstantCommand());
-    autoChooser.addOption("Spin", new SpinAuto(drive));
 
     // Configure the button bindings
     configureButtonBindings();
@@ -68,11 +71,10 @@ public class RobotContainer {
    * passing it to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
   private void configureButtonBindings() {
-    drive.setDefaultCommand(
-      new RunCommand(() -> drive.drive(controller.getLeftX(), -controller.getLeftY(), controller.getRightX(), true))
-    );
-    
-    //TODO: create a command (make the robot do something) that runs when you press A
+    // drive.setDefaultCommand(
+    //     new RunCommand(() -> drive.driveArcade(-controller.getLeftY(), controller.getLeftX()), drive));
+    // controller.a()
+    //     .whileTrue(new StartEndCommand(() -> flywheel.runVelocity(flywheelSpeedInput.get()), flywheel::stop, flywheel));
   }
 
   /**
