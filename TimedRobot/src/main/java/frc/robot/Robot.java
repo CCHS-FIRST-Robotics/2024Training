@@ -31,7 +31,8 @@ public class Robot extends TimedRobot {
   TalonFX motor2 = new TalonFX(2);
   TalonFX motor3 = new TalonFX(3);
   TalonFX motor4 = new TalonFX(4);
-
+  double maxLinearSpeed = 3;
+  double maxAngularSpeed = 2*Math.PI;
   Translation2d m_frontLeftLocation = new Translation2d(0.381, 0.381);
   Translation2d m_frontRightLocation = new Translation2d(0.381, -0.381);
   Translation2d m_backLeftLocation = new Translation2d(-0.381, 0.381);
@@ -106,17 +107,17 @@ public class Robot extends TimedRobot {
     double left_x = test.getLeftX();
     double left_y = test.getLeftY();
     double right_y = test.getRightY();
-    ChassisSpeeds speeds = new ChassisSpeeds(left_x, left_y, right_y);
+    ChassisSpeeds speeds = new ChassisSpeeds(left_x * maxLinearSpeed, left_y*maxLinearSpeed, right_y * maxAngularSpeed);
     MecanumDriveWheelSpeeds wheelSpeeds = m_kinematics.toWheelSpeeds(speeds);
     
     double frontLeft = wheelSpeeds.frontLeftMetersPerSecond;
     double frontRight = wheelSpeeds.frontRightMetersPerSecond;
     double backLeft = wheelSpeeds.rearLeftMetersPerSecond;
     double backRight = wheelSpeeds.rearRightMetersPerSecond;
-    motor1.set(frontLeft);
-    motor2.set(frontRight);
-    motor3.set(backLeft);
-    motor4.set(backRight);
+    motor1.set(frontLeft/maxLinearSpeed);
+    motor2.set(frontRight/maxLinearSpeed);
+    motor3.set(backLeft/maxLinearSpeed);
+    motor4.set(backRight/maxLinearSpeed);
 
     // use mecanum kinematics to find the speed of each motor 
     // (declare/intiialize this class somewhere else)
