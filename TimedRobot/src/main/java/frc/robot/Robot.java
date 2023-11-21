@@ -9,6 +9,11 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.XboxController;
 import com.ctre.phoenix6.hardware.TalonFX;
+
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.MecanumDriveKinematics;
+import edu.wpi.first.math.kinematics.MecanumDriveWheelSpeeds;
+import edu.wpi.first.math.geometry.Translation2d;
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -22,7 +27,19 @@ public class Robot extends TimedRobot {
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
   XboxController test = new XboxController(0);
-  TalonFX motor = new TalonFX(0);
+  TalonFX motor1 = new TalonFX(1);
+  TalonFX motor2 = new TalonFX(2);
+  TalonFX motor3 = new TalonFX(3);
+  TalonFX motor4 = new TalonFX(4);
+
+  Translation2d m_frontLeftLocation = new Translation2d(0.381, 0.381);
+  Translation2d m_frontRightLocation = new Translation2d(0.381, -0.381);
+  Translation2d m_backLeftLocation = new Translation2d(-0.381, 0.381);
+  Translation2d m_backRightLocation = new Translation2d(-0.381, -0.381);
+
+  MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
+  m_frontLeftLocation, m_frontRightLocation, m_backLeftLocation, m_backRightLocation
+);
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -84,9 +101,27 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
+    // use controller to get x speed, y speed, turn speed
+
     double left_x = test.getLeftX();
-    motor.set(left_x);
+    double left_y = test.getLeftY();
+    double right_y = test.getRightY();
+    ChassisSpeeds speeds = new ChassisSpeeds(left_x, left_y, right_y);
+    MecanumDriveWheelSpeeds wheelSpeeds = m_kinematics.toWheelSpeeds(speeds);
     
+    double frontLeft = wheelSpeeds.frontLeftMetersPerSecond;
+    double frontRight = wheelSpeeds.frontRightMetersPerSecond;
+    double backLeft = wheelSpeeds.rearLeftMetersPerSecond;
+    double backRight = wheelSpeeds.rearRightMetersPerSecond;
+    motor1.set(frontLeft);
+    motor2.set(frontRight);
+    motor3.set(backLeft);
+    motor4.set(backRight);
+
+    // use mecanum kinematics to find the speed of each motor 
+    // (declare/intiialize this class somewhere else)
+
+    //use the wheel speeds from inverse kinematics to drive each wheel motor
   }
 
   /** This function is called once when the robot is disabled. */
