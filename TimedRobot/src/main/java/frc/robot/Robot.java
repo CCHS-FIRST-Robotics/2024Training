@@ -38,9 +38,7 @@ public class Robot extends TimedRobot {
   Translation2d m_backLeftLocation = new Translation2d(-0.381, 0.381);
   Translation2d m_backRightLocation = new Translation2d(-0.381, -0.381);
 
-  MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
-  m_frontLeftLocation, m_frontRightLocation, m_backLeftLocation, m_backRightLocation
-);
+  MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(m_frontLeftLocation, m_frontRightLocation, m_backLeftLocation, m_backRightLocation);
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -118,11 +116,6 @@ public class Robot extends TimedRobot {
     motor2.set(frontRight/maxLinearSpeed);
     motor3.set(backLeft/maxLinearSpeed);
     motor4.set(backRight/maxLinearSpeed);
-
-    // use mecanum kinematics to find the speed of each motor 
-    // (declare/intiialize this class somewhere else)
-
-    //use the wheel speeds from inverse kinematics to drive each wheel motor
   }
 
   /** This function is called once when the robot is disabled. */
