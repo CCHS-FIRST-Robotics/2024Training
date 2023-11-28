@@ -43,7 +43,11 @@ def deployArtifact = deploy.targets.roborio.artifacts.frcJava
 wpi.java.debugJni = false
 
 // Set this to true to enable desktop support.
+<<<<<<< Updated upstream:TimedRobot/build.gradle
 def includeDesktopSupport = true
+=======
+def includeDesktopSupport = false
+>>>>>>> Stashed changes:build.gradle
 
 // Defining my dependencies. In this case, WPILib (+ friends), and vendor libraries.
 // Also defines JUnit 5.
