@@ -27,16 +27,25 @@ public class Robot extends TimedRobot {
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
   XboxController test = new XboxController(0);
-  TalonFX motor1 = new TalonFX(1);
-  TalonFX motor2 = new TalonFX(2);
-  TalonFX motor3 = new TalonFX(3);
-  TalonFX motor4 = new TalonFX(4);
+  TalonFX motor1 = new TalonFX(2);
+  TalonFX motor2 = new TalonFX(1);
+  TalonFX motor3 = new TalonFX(4);
+  TalonFX motor4 = new TalonFX(3);
   double maxLinearSpeed = 3;
   double maxAngularSpeed = 2*Math.PI;
-  Translation2d m_frontLeftLocation = new Translation2d(0.381, 0.381);
-  Translation2d m_frontRightLocation = new Translation2d(0.381, -0.381);
-  Translation2d m_backLeftLocation = new Translation2d(-0.381, 0.381);
-  Translation2d m_backRightLocation = new Translation2d(-0.381, -0.381);
+  Translation2d m_frontLeftLocation = new Translation2d(0.53/2, 0.575/2);
+  Translation2d m_frontRightLocation = new Translation2d(0.53/2, -0.575/2);
+  Translation2d m_backLeftLocation = new Translation2d(-0.53/2, 0.575/2);
+  Translation2d m_backRightLocation = new Translation2d(-0.53/2, -0.575/2);
+
+  double deadband = 0.1;
+
+  public double checkDeadband(double speed) {
+    if (Math.abs(speed) < deadband) {
+      return 0.0;
+    }
+    return speed;
+  }
 
   MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(m_frontLeftLocation, m_frontRightLocation, m_backLeftLocation, m_backRightLocation);
   /**
@@ -102,20 +111,21 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     // use controller to get x speed, y speed, turn speed
 
-    double left_x = test.getLeftX();
-    double left_y = test.getLeftY();
-    double right_y = test.getRightY();
-    ChassisSpeeds speeds = new ChassisSpeeds(left_x * maxLinearSpeed, left_y*maxLinearSpeed, right_y * maxAngularSpeed);
+    double left_x = checkDeadband(test.getLeftX());
+    double left_y = checkDeadband(test.getLeftY());
+    double right_y = checkDeadband(test.getRightY());
+    ChassisSpeeds speeds = new ChassisSpeeds(left_y * maxLinearSpeed, left_x*maxLinearSpeed, right_y * maxAngularSpeed);
     MecanumDriveWheelSpeeds wheelSpeeds = m_kinematics.toWheelSpeeds(speeds);
     
     double frontLeft = wheelSpeeds.frontLeftMetersPerSecond;
     double frontRight = wheelSpeeds.frontRightMetersPerSecond;
     double backLeft = wheelSpeeds.rearLeftMetersPerSecond;
     double backRight = wheelSpeeds.rearRightMetersPerSecond;
-    motor1.set(frontLeft/maxLinearSpeed);
-    motor2.set(frontRight/maxLinearSpeed);
-    motor3.set(backLeft/maxLinearSpeed);
-    motor4.set(backRight/maxLinearSpeed);
+    
+    motor1.set(-1*0.25*frontLeft/maxLinearSpeed);
+    motor2.set(0.25*frontRight/maxLinearSpeed);
+    motor3.set(-1*0.25*backLeft/maxLinearSpeed);
+    motor4.set(0.25*backRight/maxLinearSpeed);
   }
 
   /** This function is called once when the robot is disabled. */
