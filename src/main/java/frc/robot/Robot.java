@@ -40,7 +40,7 @@ public class Robot extends TimedRobot {
 
   double deadband = 0.1;
 
-  public double checkDeadband(double speed) {
+  public double zeroWithinDeadband(double speed) {
     if (Math.abs(speed) < deadband) {
       return 0.0;
     }
@@ -111,9 +111,9 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     // use controller to get x speed, y speed, turn speed
 
-    double left_x = checkDeadband(test.getLeftX());
-    double left_y = checkDeadband(test.getLeftY());
-    double right_y = checkDeadband(test.getRightY());
+    double left_x = zeroWithinDeadband(test.getLeftX());
+    double left_y = zeroWithinDeadband(test.getLeftY());
+    double right_y = zeroWithinDeadband(test.getRightY());
     ChassisSpeeds speeds = new ChassisSpeeds(left_y * maxLinearSpeed, left_x*maxLinearSpeed, right_y * maxAngularSpeed);
     MecanumDriveWheelSpeeds wheelSpeeds = m_kinematics.toWheelSpeeds(speeds);
     
