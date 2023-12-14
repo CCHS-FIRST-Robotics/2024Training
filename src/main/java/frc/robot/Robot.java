@@ -8,7 +8,12 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.XboxController;
+
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
+
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.controller.PIDController;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.MecanumDriveKinematics;
@@ -34,13 +39,17 @@ public class Robot extends TimedRobot {
   double maxLinearSpeed = 3;
   double maxAngularSpeed = 2*Math.PI;
   Translation2d m_frontLeftLocation = new Translation2d(0.53/2, 0.575/2);
-  Translation2d m_frontRightLocation = new Translation2d(0.53/2, -0.575/2);
+  Translation2d 
+  m_frontRightLocation = new Translation2d(0.53/2, -0.575/2);
   Translation2d m_backLeftLocation = new Translation2d(-0.53/2, 0.575/2);
   Translation2d m_backRightLocation = new Translation2d(-0.53/2, -0.575/2);
 
+  // Define Feedforward and PID controller (with constants)
+  SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(kS, kV, kA);
+  PIDController pid = new PIDController(kP, kI, kD);
   double deadband = 0.1;
 
-  public double checkDeadband(double speed) {
+  public double zeroWithinDeadband(double speed) {
     if (Math.abs(speed) < deadband) {
       return 0.0;
     }
@@ -111,21 +120,45 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     // use controller to get x speed, y speed, turn speed
 
-    double left_x = checkDeadband(test.getLeftX());
-    double left_y = checkDeadband(test.getLeftY());
-    double right_y = checkDeadband(test.getRightY());
+    double left_x = zeroWithinDeadband(test.getLeftX());
+    double left_y = zeroWithinDeadband(test.getLeftY());
+    double right_y = zeroWithinDeadband(test.getRightY());
+
+    double radius = 1.0; // meters
+
     ChassisSpeeds speeds = new ChassisSpeeds(left_y * maxLinearSpeed, left_x*maxLinearSpeed, right_y * maxAngularSpeed);
     MecanumDriveWheelSpeeds wheelSpeeds = m_kinematics.toWheelSpeeds(speeds);
     
-    double frontLeft = wheelSpeeds.frontLeftMetersPerSecond;
+    double frontLeft = wheelSpeeds.frontLeftMetersPerSecond; // target speed based on the joystick
     double frontRight = wheelSpeeds.frontRightMetersPerSecond;
-    double backLeft = wheelSpeeds.rearLeftMetersPerSecond;
+    double backLeft = wheelSpeeds.rearLeftMetersPerSecond; 
     double backRight = wheelSpeeds.rearRightMetersPerSecond;
-    
-    motor1.set(-1*0.25*frontLeft/maxLinearSpeed);
-    motor2.set(0.25*frontRight/maxLinearSpeed);
-    motor3.set(-1*0.25*backLeft/maxLinearSpeed);
-    motor4.set(0.25*backRight/maxLinearSpeed);
+
+    StatusSignal<Double> fL = motor1.getVelocity(); // converts current speed of the motor to a double 
+    StatusSignal<Double> fR = motor2.getVelocity(); 
+    StatusSignal<Double> bL = motor3.getVelocity();
+    StatusSignal<Double> bR = motor4.getVelocity();
+    // NO LONGER USING THIS
+    // motor1.set(-1*0.25*frontLeft/maxLinearSpeed);
+    // motor2.set(0.25*frontRight/maxLinearSpeed);
+    // motor3.set(-1*0.25*backLeft/maxLinearSpeed);
+    // motor4.set(0.25*backRight/maxLinearSpeed);
+
+    // Calculate the feedforward for the desired speed of each wheel (using DC motor feedforward)
+    double frontLeftVolts = feedforward.calculate(frontLeft); // currently taking a speed and changing it to a voltage 
+    double frontRightVolts = feedforward.calculate(frontRight); 
+    double backLeftVolts = feedforward.calculate(backLeft);
+    double backRightVolts = feedforward.calculate(backRight);
+    // Calculate the PID output for the desired speed of each wheel, referencing the current speed (using PID)
+    frontLeftVolts += pid.calculate(fL.getValue() * 2 * Math.PI * radius, frontLeft);
+    frontRightVolts += pid.calculate(fR.getValue() * 2 * Math.PI * radius, frontRight);
+    backLeftVolts += pid.calculate(bL.getValue() * 2 * Math.PI * radius, backLeft);
+    backRightVolts += feedforward.calculate(bR.getValue() * 2 * Math.PI * radius, backRight);
+    // Add these two outputs, and send them to the motors
+    motor1.setVoltage(-1*frontLeftVolts);
+    motor2.setVoltage(frontRightVolts);
+    motor3.setVoltage(-1*backLeftVolts);
+    motor4.setVoltage(backRightVolts);
   }
 
   /** This function is called once when the robot is disabled. */
