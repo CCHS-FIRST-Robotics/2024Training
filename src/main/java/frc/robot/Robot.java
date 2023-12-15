@@ -153,7 +153,7 @@ public class Robot extends TimedRobot {
     frontLeftVolts += pid.calculate(fL.getValue() * 2 * Math.PI * radius, frontLeft);
     frontRightVolts += pid.calculate(fR.getValue() * 2 * Math.PI * radius, frontRight);
     backLeftVolts += pid.calculate(bL.getValue() * 2 * Math.PI * radius, backLeft);
-    backRightVolts += feedforward.calculate(bR.getValue() * 2 * Math.PI * radius, backRight);
+    backRightVolts += pid.calculate(bR.getValue() * 2 * Math.PI * radius, backRight);
     // Add these two outputs, and send them to the motors
     motor1.setVoltage(-1*frontLeftVolts);
     motor2.setVoltage(frontRightVolts);
