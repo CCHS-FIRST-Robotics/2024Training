@@ -135,7 +135,7 @@ public class Robot extends TimedRobot {
     double left_y = zeroWithinDeadband(test.getLeftY());
     double right_y = zeroWithinDeadband(test.getRightY());
 
-    double radius = 1.0; // Meters
+    double radius = 0.07; // Meters
 
     float robotAngle = gyro.getYaw();
     ChassisSpeeds speeds = new ChassisSpeeds(left_y * maxLinearSpeed, left_x*maxLinearSpeed, right_y * maxAngularSpeed);
