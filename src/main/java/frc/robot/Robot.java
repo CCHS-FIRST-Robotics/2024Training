@@ -1,6 +1,6 @@
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source Software; you can modify and/or share it under the terms of
-// The WPILib BSD license file in the root directory of this project.
+// the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
 
@@ -8,17 +8,21 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.math.geometry.Rotation2d;
+
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
+
 import com.kauailabs.navx.frc.AHRS;
+
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.controller.PIDController;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.MecanumDriveKinematics;
 import edu.wpi.first.math.kinematics.MecanumDriveWheelSpeeds;
+
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -54,9 +58,6 @@ public class Robot extends TimedRobot {
   SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(kS, kV, kA);
   PIDController pid = new PIDController(kP, kI, kD);
   double deadband = 0.1;
-  
-  
-  
   
   AHRS gyro = new AHRS();
 
@@ -169,7 +170,7 @@ public class Robot extends TimedRobot {
     frontRightVolts += pid.calculate(fR.getValue() * 2 * Math.PI * radius / 10.71, frontRight);
     backLeftVolts += pid.calculate(bL.getValue() * 2 * Math.PI * radius / 10.71, backLeft);
     backRightVolts += pid.calculate(bR.getValue() * 2 * Math.PI * radius / 10.71, backRight);
-   //inputs voltage
+   // inputs voltage
     motor1.setVoltage(-1*frontLeftVolts); // some motors turn the opposite direction
     motor2.setVoltage(frontRightVolts);
     motor3.setVoltage(-1*backLeftVolts); // some motors turn the opposite direction
