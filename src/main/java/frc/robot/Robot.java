@@ -12,13 +12,17 @@ import edu.wpi.first.wpilibj.XboxController;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
 
+import com.kauailabs.navx.frc.AHRS;
+
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.controller.PIDController;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.MecanumDriveKinematics;
 import edu.wpi.first.math.kinematics.MecanumDriveWheelSpeeds;
+
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -45,9 +49,17 @@ public class Robot extends TimedRobot {
   Translation2d m_backRightLocation = new Translation2d(-0.53/2, -0.575/2);
 
   // Define Feedforward and PID controller (with constants)
+  double kS = 0.0;
+  double kV = 0.0;
+  double kA = 0.0;
+  double kP = 0.0;
+  double kI = 0.0;
+  double kD = 0.0;
   SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(kS, kV, kA);
   PIDController pid = new PIDController(kP, kI, kD);
   double deadband = 0.1;
+  
+  AHRS gyro = new AHRS();
 
   public double zeroWithinDeadband(double speed) {
     if (Math.abs(speed) < deadband) {
@@ -118,15 +130,18 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    // use controller to get x speed, y speed, turn speed
+    // Use controller to get x speed, y speed, turn speed
 
     double left_x = zeroWithinDeadband(test.getLeftX());
     double left_y = zeroWithinDeadband(test.getLeftY());
     double right_y = zeroWithinDeadband(test.getRightY());
 
-    double radius = 1.0; // meters
+    double radius = 0.07; // Meters
 
+    float robotAngle = gyro.getYaw();
     ChassisSpeeds speeds = new ChassisSpeeds(left_y * maxLinearSpeed, left_x*maxLinearSpeed, right_y * maxAngularSpeed);
+    Rotation2d rotation = new Rotation2d(robotAngle * Math.PI / 180);
+    speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, rotation);
     MecanumDriveWheelSpeeds wheelSpeeds = m_kinematics.toWheelSpeeds(speeds);
     
     double frontLeft = wheelSpeeds.frontLeftMetersPerSecond; // target velocity based on the joystick
@@ -134,7 +149,7 @@ public class Robot extends TimedRobot {
     double backLeft = wheelSpeeds.rearLeftMetersPerSecond; 
     double backRight = wheelSpeeds.rearRightMetersPerSecond;
 
-    StatusSignal<Double> fL = motor1.getVelocity(); // converts current speed of the motor to a double 
+    StatusSignal<Double> fL = motor1.getVelocity(); // converts current speed of the motor to a StatusSignal double 
     StatusSignal<Double> fR = motor2.getVelocity(); 
     StatusSignal<Double> bL = motor3.getVelocity();
     StatusSignal<Double> bR = motor4.getVelocity();
@@ -150,15 +165,15 @@ public class Robot extends TimedRobot {
     double backLeftVolts = feedforward.calculate(backLeft);
     double backRightVolts = feedforward.calculate(backRight);
     // Calculates the PID output for the desired speed of each wheel, referencing the current speed (using PID)
-     // and Adds these two outputs, and send them to the motors
-    frontLeftVolts += pid.calculate(fL.getValue() * 2 * Math.PI * radius, frontLeft); //frontLeft etc. is target velocity
-    frontRightVolts += pid.calculate(fR.getValue() * 2 * Math.PI * radius, frontRight);
-    backLeftVolts += pid.calculate(bL.getValue() * 2 * Math.PI * radius, backLeft);
-    backRightVolts += pid.calculate(bR.getValue() * 2 * Math.PI * radius, backRight);
-   //inputs voltage
-    motor1.setVoltage(-1*frontLeftVolts); //some motors turn the opposite direction
+    // ...and adds these two outputs, and send them to the motors
+    frontLeftVolts += pid.calculate(fL.getValue() * 2 * Math.PI * radius / 10.71, frontLeft); // frontLeft etc. is target velocity
+    frontRightVolts += pid.calculate(fR.getValue() * 2 * Math.PI * radius / 10.71, frontRight); // gear ratio (motor to wheel)
+    backLeftVolts += pid.calculate(bL.getValue() * 2 * Math.PI * radius / 10.71, backLeft);
+    backRightVolts += pid.calculate(bR.getValue() * 2 * Math.PI * radius / 10.71, backRight);
+   // inputs voltage
+    motor1.setVoltage(-1*frontLeftVolts); // some motors turn the opposite direction
     motor2.setVoltage(frontRightVolts);
-    motor3.setVoltage(-1*backLeftVolts); //some motors turn the opposite direction
+    motor3.setVoltage(-1*backLeftVolts); // some motors turn the opposite direction
     motor4.setVoltage(backRightVolts); 
   }
 
