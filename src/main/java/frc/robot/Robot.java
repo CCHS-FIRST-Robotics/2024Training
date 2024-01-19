@@ -4,10 +4,19 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj.PowerDistribution;
+import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.XboxController;
+
+import org.littletonrobotics.junction.LogFileUtil;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -29,7 +38,10 @@ import edu.wpi.first.math.geometry.Rotation2d;
  * the package after creating this project, you must also update the build.gradle file in the
  * project.
  */
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
+
+
+  
   private static final String kDefaultAuto = "Default";
   private static final String kCustomAuto = "My Auto";
   private String m_autoSelected;
@@ -43,18 +55,17 @@ public class Robot extends TimedRobot {
   double maxLinearSpeed = 3;
   double maxAngularSpeed = 2*Math.PI;
   Translation2d m_frontLeftLocation = new Translation2d(0.53/2, 0.575/2);
-  Translation2d 
-  m_frontRightLocation = new Translation2d(0.53/2, -0.575/2);
+  Translation2d m_frontRightLocation = new Translation2d(0.53/2, -0.575/2);
   Translation2d m_backLeftLocation = new Translation2d(-0.53/2, 0.575/2);
   Translation2d m_backRightLocation = new Translation2d(-0.53/2, -0.575/2);
 
   // Define Feedforward and PID controller (with constants)
-  double kS = 0.0;
-  double kV = 0.0;
-  double kA = 0.0;
-  double kP = 0.0;
-  double kI = 0.0;
-  double kD = 0.0;
+  double kS = 0.0; //voltage needed to overcome static friction
+  double kV = 3.2; //voltage needed to cruise at a given velocity
+  double kA = 0.0; //voltage needed to induce a given acceleration
+  double kP = 1; //drive error to zero by contributing to the signal proportionally to the current error
+  double kI = 0.0; //drive error to zero by contributing to the signal proportionally to the derivative of the error
+  double kD = 0.0; //drive error to zero by contributing to the signal proportionally to the sum of all past errors
   SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(kS, kV, kA);
   PIDController pid = new PIDController(kP, kI, kD);
   double deadband = 0.1;
@@ -75,6 +86,23 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
+
+    Logger.recordMetadata("ProjectName", "MyProject"); // Set a metadata value
+
+    if (isReal()) {
+        // Logger.addDataReceiver(new WPILOGWriter()); // Log to a USB stick ("/U/logs")
+        Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
+        // new PowerDistribution(1, ModuleType.kRev); // Enables power distribution logging
+    } else {
+        setUseTiming(false); // Run as fast as possible
+        String logPath = LogFileUtil.findReplayLog(); // Pull the replay log from AdvantageScope (or prompt the user)
+        Logger.setReplaySource(new WPILOGReader(logPath)); // Read replay log
+        Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))); // Save outputs to a new log
+    }
+
+    // Logger.disableDeterministicTimestamps() // See "Deterministic Timestamps" in the "Understanding Data Flow" page
+    Logger.start(); // Start logging! No more data receivers, replay sources, or metadata values may be added.
+
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
@@ -132,9 +160,10 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     // Use controller to get x speed, y speed, turn speed
 
-    double left_x = zeroWithinDeadband(test.getLeftX());
-    double left_y = zeroWithinDeadband(test.getLeftY());
-    double right_y = zeroWithinDeadband(test.getRightY());
+    // double left_x = .25 * zeroWithinDeadband(test.getLeftX());
+    double left_x = 0.1;
+    double left_y = .25 * zeroWithinDeadband(test.getLeftY( )) * 0;
+    double right_y = zeroWithinDeadband(test.getRightY()) * 0;
 
     double radius = 0.07; // Meters
 
@@ -144,15 +173,35 @@ public class Robot extends TimedRobot {
     speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, rotation);
     MecanumDriveWheelSpeeds wheelSpeeds = m_kinematics.toWheelSpeeds(speeds);
     
-    double frontLeft = wheelSpeeds.frontLeftMetersPerSecond; // target velocity based on the joystick
+    double frontLeft = -1*wheelSpeeds.frontLeftMetersPerSecond; // target velocity based on the joystick
+    Logger.recordOutput("targetfrontLeft", frontLeft);
+
     double frontRight = wheelSpeeds.frontRightMetersPerSecond;
-    double backLeft = wheelSpeeds.rearLeftMetersPerSecond; 
+    Logger.recordOutput("targetfrontRight", frontRight);
+
+    double backLeft = -1*wheelSpeeds.rearLeftMetersPerSecond; 
+    Logger.recordOutput("targetbackLeft", backLeft);
+
     double backRight = wheelSpeeds.rearRightMetersPerSecond;
+    Logger.recordOutput("targetbackRight", backRight);
 
     StatusSignal<Double> fL = motor1.getVelocity(); // converts current speed of the motor to a StatusSignal double 
     StatusSignal<Double> fR = motor2.getVelocity(); 
     StatusSignal<Double> bL = motor3.getVelocity();
     StatusSignal<Double> bR = motor4.getVelocity();
+
+    double motorspeedfL = fL.getValue() * 2 * Math.PI * radius / 10.71; // meters per second
+    Logger.recordOutput("motorspeedfL", motorspeedfL);
+
+    double motorspeedfR = fR.getValue() * 2 * Math.PI * radius / 10.71;
+    Logger.recordOutput("motorspeedfR", motorspeedfR);
+
+    double motorspeedbL = bL.getValue() * 2 * Math.PI * radius / 10.71;
+    Logger.recordOutput("motorspeedbL", motorspeedbL);
+    // System.out.println(motorspeedbL);
+
+    double motorspeedbR = bR.getValue() * 2 * Math.PI * radius / 10.71;
+    Logger.recordOutput("motorspeedbR", motorspeedbR);
     // NO LONGER USING THIS
     // motor1.set(-1*0.25*frontLeft/maxLinearSpeed);
     // motor2.set(0.25*frontRight/maxLinearSpeed);
@@ -166,14 +215,14 @@ public class Robot extends TimedRobot {
     double backRightVolts = feedforward.calculate(backRight);
     // Calculates the PID output for the desired speed of each wheel, referencing the current speed (using PID)
     // ...and adds these two outputs, and send them to the motors
-    frontLeftVolts += pid.calculate(fL.getValue() * 2 * Math.PI * radius / 10.71, frontLeft); // frontLeft etc. is target velocity
-    frontRightVolts += pid.calculate(fR.getValue() * 2 * Math.PI * radius / 10.71, frontRight);
-    backLeftVolts += pid.calculate(bL.getValue() * 2 * Math.PI * radius / 10.71, backLeft);
-    backRightVolts += pid.calculate(bR.getValue() * 2 * Math.PI * radius / 10.71, backRight);
+    frontLeftVolts += pid.calculate(motorspeedfL, frontLeft); // frontLeft etc. is target velocity
+    frontRightVolts += pid.calculate(motorspeedfR, frontRight);
+    backLeftVolts += pid.calculate(motorspeedbL, backLeft);
+    backRightVolts += pid.calculate(motorspeedbR, backRight);
    // inputs voltage
-    motor1.setVoltage(-1*frontLeftVolts); // some motors turn the opposite direction
+    motor1.setVoltage(frontLeftVolts); // some motors turn the opposite direction
     motor2.setVoltage(frontRightVolts);
-    motor3.setVoltage(-1*backLeftVolts); // some motors turn the opposite direction
+    motor3.setVoltage(backLeftVolts); // some motors turn the opposite direction
     motor4.setVoltage(backRightVolts); 
   }
 
